@@ -202,20 +202,26 @@ def mouseReleased(app,event):
             x0,y0,x1,y1 = getBlockBounds(app,app.bStartX,app.bStartY,row,col)
             if (x0 <= cx <= x1 and y0 <= cy <= y1 and app.gameBoard.board[row][col] != False):
                 app.gameBoard.board[row][col] = app.selectedBlock
+                app.selectedBlock = None
+                return
 
     # Check if block is in Palette
     for row in range(app.pRows):
         for col in range(app.pCols):
             x0,y0,x1,y1 = getBlockBounds(app,app.pStartX,app.pStartY,row,col)
-            if (x0 <= cx <= x1 and y0 <= cy <= y1 and app.palette[row][col] != False):
+            if (x0 <= cx <= x1 and y0 <= cy <= y1):
                 app.palette[row][col] = app.selectedBlock
+                app.selectedBlock = None
+                return
 
+    # Return block to original position
     if app.wasOnBoard == True:
         app.gameBoard.board[app.originalRow][app.originalCol] = app.selectedBlock
     else:
         app.palette[app.originalRow][app.originalCol] = app.selectedBlock
-
     app.selectedBlock = None
 
     print(f"mouseReleased at {(event.x,event.y)}")
+    print(f"palette: {app.palette}")
+
 runApp(height=853,width=480)
