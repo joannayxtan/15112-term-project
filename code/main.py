@@ -1,5 +1,6 @@
 from cmu_112_graphics import *
 from classes import *
+from generate_answer import *
 import random,copy
 
 ##########################################
@@ -67,6 +68,7 @@ def homeMode_mousePressed(app,event):
     playX1,playY1 = app.width/2+recW/2,app.height*2/3+recH/2
     if (playX0 <= event.x <= playX1 and playY0 <= event.y <= playY1
         and app.level != 0):
+        initializeGame(app)
         app.mode = "gameMode"
 
 def homeMode_keyPressed(app,event):
@@ -74,6 +76,7 @@ def homeMode_keyPressed(app,event):
         app.level = int(event.key)
     if event.key == "Enter":
         if app.level != 0:
+            initializeGame(app)
             app.mode = "gameMode"
 
 ##########################################
@@ -248,36 +251,8 @@ def appStarted(app):
     app.mode = "homeMode"
     app.totalLevels = 5
     app.level = 0
-    # Create Answer Board
-    # Note: currently hardcoded, will implement randomization later
-    app.ans = GameBoard()
     app.blockSize = app.width/9
-    app.ans.setBoard([[ColorBlock((255,102,0),app.blockSize),
-                          ColorBlock((255,153,0),app.blockSize),
-                          ColorBlock((255,204,0),app.blockSize)]])
-
-    # Create Palette according to Answer Board
-    # app.palette: list of ColorBlock instances
-    createPalette(app)
-
-    # Palette and Board Dimensions
-    app.pRows = len(app.palette)
-    app.pCols = len(app.palette[0])
-    app.bRows = len(app.ans.board)
-    app.bCols = len(app.ans.board[0])
-
-    # Where to start drawing Palette and Board
     app.margin = (app.width - 6*app.blockSize)/2
-    app.pStartX = app.margin
-    app.pStartY = app.height/2-app.margin*3
-    app.bStartX = (app.width - app.bCols*app.blockSize)/2
-    app.bStartY = app.height/2+app.margin
-
-    # Create Game Board to be drawn
-    createGameBoard(app)
-    print(app.gameBoard.board)
-    print(app.ans.board)
-    print(app.bRows,app.bCols)
 
     # Moving Block
     app.selectedBlock = None
@@ -289,20 +264,47 @@ def appStarted(app):
     # Load Button Images
     # Source: https://www.flaticon.com/free-icons/back
     app.backButton = app.loadImage('images/back.png')
-    app.backButton = app.scaleImage(app.backButton,0.06)
+    app.backButton = app.scaleImage(app.backButton,0.05)
     # Source: "https://www.flaticon.com/free-icons/redo"
     app.redo = app.loadImage('images/redo.png')
-    app.redo = app.scaleImage(app.redo,0.06)
+    app.redo = app.scaleImage(app.redo,0.05)
     # Source: https://www.flaticon.com/free-icons/question
     app.help = app.loadImage('images/help.png')
-    app.help = app.scaleImage(app.help,0.06)
+    app.help = app.scaleImage(app.help,0.05)
+
+def initializeGame(app):
+    generateAnswerBoard(app)
+    print(app.ans.board)
+    # Create Palette according to Answer Board
+    # app.palette: list of ColorBlock instances
+    createPalette(app)
+    # Palette and Board Dimensions
+    app.pRows = len(app.palette)
+    app.pCols = len(app.palette[0])
+    app.bRows = len(app.ans.board)
+    app.bCols = len(app.ans.board[0])
+
+    # Where to start drawing Palette and Board
+    app.pStartX = app.margin
+    app.pStartY = app.height/2-app.margin*3
+    app.bStartX = (app.width - app.bCols*app.blockSize)/2
+    app.bStartY = app.height/2-app.margin
+
+    # Create Game Board to be drawn
+    createGameBoard(app)
+    print(app.gameBoard.board)
+    print(app.ans.board)
+    print(app.bRows,app.bCols)
 
 # Create Palette function
 # Assumption: palette will not have more than 12 blocks
 def createPalette(app):
-    colors = random.shuffle(createPaletteHelper(app.ans.board))
+    print(f"in createPalette")
+    colors = createPaletteHelper(app.ans.board)
+    random.shuffle(colors)
     app.palette = [[False for i in range(6)] for j in range(2)]
     i = 0
+    print(colors)
     for row in range(len(app.palette)):
         for col in range(len(app.palette[0])):
             if i < len(colors):

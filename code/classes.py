@@ -1,3 +1,4 @@
+
 class ColorBlock():
     def __init__(self,color=(0,0,0),size=35):
         self.rgb = color
@@ -15,21 +16,9 @@ class ColorBlock():
 
 class GameBoard():
     def __init__(self):
-        self.possibleBoards = [
-            [[True,True,True],
-             [True,True,True],
-             [True,True,True]],
-
-            [[True,True,True]]
-        ]
         # hard coding the board
-        self.board = self.possibleBoards[1]
-        self.rows = len(self.board)
-        self.cols = len(self.board[0])
+        self.board = []
 
     # For testing purposes, allows passing in a set board
     def setBoard(self,board):
-        rows = len(board)
-        cols = len(board[0])
-        if self.rows==rows and self.cols==cols:
-            self.board = board
+        self.board = board
