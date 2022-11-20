@@ -1,12 +1,13 @@
 class ColorBlock():
     def __init__(self,color=(0,0,0),size=35):
         self.rgb = color
-        self.hex = self.rgbToHex()
+        self.hex = self.rgbToHex(self.rgb)
         self.size = size
 
     # Source: https://stackoverflow.com/questions/51591456/can-i-use-rgb-in-tkinter
-    def rgbToHex(self):
-        r, g, b = self.rgb
+    @staticmethod
+    def rgbToHex(rgb):
+        r, g, b = rgb
         return f'#{r:02x}{g:02x}{b:02x}'
 
     def __repr__(self):
