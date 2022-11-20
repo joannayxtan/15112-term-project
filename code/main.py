@@ -23,6 +23,7 @@ def homeMode_redrawAll(app,canvas):
                        font = smallfont, fill = 'grey')
     drawPlayButton(app,canvas)
 
+# Draw Level Buttons
 def drawLevelChoices(app,canvas):
     r = app.margin*0.4
     startX = (app.width - 10*r)/2
@@ -38,6 +39,7 @@ def drawLevelChoices(app,canvas):
                                fill = bluefill)
         canvas.create_text(cx,cy,text=f"{i}",font=subfont,fill='white')
 
+# Find position of Level Buttons
 def getCircleBounds(app,i):
     r = app.margin*0.4
     startX = (app.width - 10*r)/2
@@ -46,6 +48,7 @@ def getCircleBounds(app,i):
     x0,y0,x1,y1 = cx-r*0.8,cy-r*0.8,cx+r*0.8,cy+r*0.8
     return x0,y0,x1,y1
 
+# Draw Play Button
 def drawPlayButton(app,canvas):
     recW,recH = app.width/3,app.width/10
     canvas.create_rectangle(app.width/2-recW/2,app.height*2/3-recH/2,
@@ -96,6 +99,7 @@ def drawButtons(app,canvas):
                         image=ImageTk.PhotoImage(app.redo))
     canvas.create_image(app.width-app.margin,app.height-app.margin,
                         image=ImageTk.PhotoImage(app.help))
+
 # Draw Palette
 def drawPalette(app,canvas):
     for i in range(app.pRows):
@@ -145,6 +149,7 @@ def drawSelectedBlock(app,canvas):
                             outline = ColorBlock.rgbToHex((r,g,b)),
                             width = 5)
 
+# Lighter RGB for outlines of selected blocks
 def lighterRGB(rgb):
     rgbList = list(rgb)
     for i in range(len(rgbList)):
@@ -233,7 +238,6 @@ def gameMode_mouseReleased(app,event):
 
     print(f"mouseReleased at {(event.x,event.y)}")
     print(f"palette: {app.palette}")
-
 
 ##########################################
 # Main App
