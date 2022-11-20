@@ -20,27 +20,23 @@ def generateAnswerBoard(app):
     possibleBoards = []
     app.ans = GameBoard()
     if app.level == 1:
-        possibleBoards.append(linearBoard(random.randint(5,7)))
-        app.ans.setBoard(possibleBoards[0])
-    elif app.level == 2: pass
-    elif app.level == 3: pass
-    elif app.level == 4: pass
-    elif app.level == 5: pass
+        possibleBoards.append(linearBoard(1))
+    if app.level >= 2:
+        possibleBoards.append(linearBoard(2))
+        possibleBoards.append(tBoard(2))
+    if app.level >= 3: pass
+    if app.level >= 4: pass
+    if app.level >= 5: pass
+    app.ans.setBoard(random.choice(possibleBoards))
 
     # app.ans.setBoard([[ColorBlock((255,102,0),app.blockSize),
     #                       ColorBlock((255,153,0),app.blockSize),
     #                       ColorBlock((255,204,0),app.blockSize)]])
 
-def linearBoard(totalBlocks):
-    startColor,endColor = generateStartEndColors(totalBlocks-1)
-    colors = interpolateColors(startColor,endColor,totalBlocks)
-    board = []
-    for i in range(totalBlocks):
-        board.append([ColorBlock(colors[i])])
-    return board
-
-def generateStartEndColors(minStep):
-    startColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
+def generateStartEndColors(minStep,level,startColor=None):
+    minStep*=30-level*5
+    if startColor == None:
+        startColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
     endColor = [0,0,0]
     for i in range(len(startColor)):
         if startColor[i] <= minStep:
@@ -52,6 +48,46 @@ def generateStartEndColors(minStep):
             num2 = random.randint(startColor[i]+minStep,255)
             endColor[i] = random.choice((num1,num2))
     return startColor,tuple(endColor)
+
+##########################################
+# All Possible Boards
+##########################################
+
+"""
+For all boards:
+True: blockspace, False: not block space
+"""
+
+def linearBoard(level=1):
+    totalBlocks = random.randint(5,7)
+    startColor,endColor = generateStartEndColors(totalBlocks-1,level)
+    colors = interpolateColors(startColor,endColor,totalBlocks)
+    board = []
+    for i in range(totalBlocks):
+        board.append([ColorBlock(colors[i])])
+    return board
+
+def tBoard(level=2):
+    # Create horizontal branch
+    cols = random.randint(4,6)
+    startColor,endColor = generateStartEndColors(cols-1,level)
+    colors = interpolateColors(startColor,endColor,cols)
+    board = [[ColorBlock(color) for color in colors]]
+
+    # Create vertical branch from random horizontal position
+    tCol = random.randint(0,cols-1)
+    rows = 12-cols-random.randint(0,8-cols)
+    startColor = colors[tCol]
+    startColor,endColor = generateStartEndColors(rows-1,level,startColor)
+    colors = interpolateColors(startColor,endColor,rows)
+    print(f"colors in tBoard: {colors}")
+    for row in range(rows-1):
+        board.append([False for i in range(cols)])
+    print(f"tBoard: {board}")
+    for row in range(len(board)):
+        print(f"looping tBoard: {(row,tCol)}")
+        board[row][tCol] = ColorBlock(colors[row])
+    return board
 
 # print(interpolateColors((255,102,0),(255,204,0),3))
 # print(generateStartEndColors(2))

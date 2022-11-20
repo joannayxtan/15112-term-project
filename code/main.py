@@ -146,7 +146,7 @@ def drawSelectedBlock(app,canvas):
     x0,x1 = app.selectedX - blockSize/2, app.selectedX + blockSize/2
     y0,y1 = app.selectedY - blockSize/2, app.selectedY + blockSize/2
     r,g,b = lighterRGB(app.selectedBlock.rgb)
-    print(f"selectedBlock: {app.selectedBlock.rgb}, outline: {(r,g,b)}")
+    # print(f"selectedBlock: {app.selectedBlock.rgb}, outline: {(r,g,b)}")
     canvas.create_rectangle(x0,y0,x1,y1,
                             fill = app.selectedBlock.hex,
                             outline = ColorBlock.rgbToHex((r,g,b)),
@@ -160,7 +160,7 @@ def lighterRGB(rgb):
             rgbList[i] += 50
         else:
             rgbList[i] = 255
-    print(f"{rgb} -> {(rgbList[0],rgbList[1],rgbList[2])}")
+    # print(f"{rgb} -> {(rgbList[0],rgbList[1],rgbList[2])}")
     return (rgbList[0],rgbList[1],rgbList[2])
 
 def gameMode_mousePressed(app,event):
@@ -198,14 +198,14 @@ def gameMode_mousePressed(app,event):
                 app.gameBoard.board[row][col] = True
                 return
 
-    print(f"currently selecting: {app.selectedBlock}")
-    print(f"mousePressed at {(event.x,event.y)}")
+    # print(f"currently selecting: {app.selectedBlock}")
+    # print(f"mousePressed at {(event.x,event.y)}")
 
 def gameMode_mouseDragged(app,event):
     app.selectedX = event.x-app.cxCenterDiff
     app.selectedY = event.y-app.cyCenterDiff
-    print(f"dragging {app.selectedBlock}")
-    print(f"mouseDragged at {(event.x,event.y)}")
+    # print(f"dragging {app.selectedBlock}")
+    # print(f"mouseDragged at {(event.x,event.y)}")
 
 def gameMode_mouseReleased(app,event):
     cx,cy = event.x,event.y
@@ -218,19 +218,38 @@ def gameMode_mouseReleased(app,event):
     for row in range(app.bRows):
         for col in range(app.bCols):
             x0,y0,x1,y1 = getBlockBounds(app,app.bStartX,app.bStartY,row,col)
-            if (x0 <= cx <= x1 and y0 <= cy <= y1 and app.gameBoard.board[row][col] == True):
-                app.gameBoard.board[row][col] = app.selectedBlock
-                app.selectedBlock = None
-                return
-
+            if (x0 <= cx <= x1 and y0 <= cy <= y1):
+                if (app.gameBoard.board[row][col] == True):
+                    app.gameBoard.board[row][col] = app.selectedBlock
+                    app.selectedBlock = None
+                    return
+                if (app.gameBoard.board[row][col] != False and app.wasOnBoard == True):
+                    app.gameBoard.board[app.originalRow][app.originalCol] = app.gameBoard.board[row][col]
+                    app.gameBoard.board[row][col] = app.selectedBlock
+                    app.selectedBlock = None
+                    return
+                if (app.gameBoard.board[row][col] != False and app.wasOnBoard == False):
+                    result = nextEmptySpacePalette(app)
+                    if result != None:
+                        i,j = result
+                        app.palette[i][j] = app.gameBoard.board[row][col]
+                        app.gameBoard.board[row][col] = app.selectedBlock
+                        app.selectedBlock = None
+                        return
     # Check if block is in Palette
     for row in range(app.pRows):
         for col in range(app.pCols):
             x0,y0,x1,y1 = getBlockBounds(app,app.pStartX,app.pStartY,row,col)
-            if (x0 <= cx <= x1 and y0 <= cy <= y1 and app.palette[row][col] == False):
-                app.palette[row][col] = app.selectedBlock
-                app.selectedBlock = None
-                return
+            if (x0 <= cx <= x1 and y0 <= cy <= y1):
+                if app.palette[row][col] == False:
+                    app.palette[row][col] = app.selectedBlock
+                    app.selectedBlock = None
+                    return
+                if app.wasOnBoard == False:
+                    app.palette[app.originalRow][app.originalCol] = app.palette[row][col]
+                    app.palette[row][col] = app.selectedBlock
+                    app.selectedBlock = None
+                    return
 
     # Return block to original position
     if app.wasOnBoard == True:
@@ -239,8 +258,15 @@ def gameMode_mouseReleased(app,event):
         app.palette[app.originalRow][app.originalCol] = app.selectedBlock
     app.selectedBlock = None
 
-    print(f"mouseReleased at {(event.x,event.y)}")
-    print(f"palette: {app.palette}")
+    # print(f"mouseReleased at {(event.x,event.y)}")
+    # print(f"palette: {app.palette}")
+
+def nextEmptySpacePalette(app):
+    for i in range(app.pRows):
+        for j in range(app.pCols):
+            if app.palette[i][j] == False:
+                return i,j
+    return None
 
 ##########################################
 # Main App
@@ -274,15 +300,17 @@ def appStarted(app):
 
 def initializeGame(app):
     generateAnswerBoard(app)
-    print(app.ans.board)
     # Create Palette according to Answer Board
     # app.palette: list of ColorBlock instances
     createPalette(app)
+    print(f"Answer Board: {app.ans.board}")
+    print(f"Palette: {app.palette}")
     # Palette and Board Dimensions
     app.pRows = len(app.palette)
     app.pCols = len(app.palette[0])
     app.bRows = len(app.ans.board)
     app.bCols = len(app.ans.board[0])
+    print(f"board dim: {(app.bRows,app.bCols)}")
 
     # Where to start drawing Palette and Board
     app.pStartX = app.margin
@@ -292,19 +320,24 @@ def initializeGame(app):
 
     # Create Game Board to be drawn
     createGameBoard(app)
-    print(app.gameBoard.board)
-    print(app.ans.board)
-    print(app.bRows,app.bCols)
+    # print(app.gameBoard.board)
+    # print(app.ans.board)
+    # print(app.bRows,app.bCols)
 
 # Create Palette function
 # Assumption: palette will not have more than 12 blocks
 def createPalette(app):
-    print(f"in createPalette")
+    # print(f"in createPalette")
     colors = createPaletteHelper(app.ans.board)
+    onlyColors = []
+    for color in colors:
+        if color != False:
+            onlyColors.append(color)
+    colors = onlyColors
     random.shuffle(colors)
     app.palette = [[False for i in range(6)] for j in range(2)]
     i = 0
-    print(colors)
+    # print(colors)
     for row in range(len(app.palette)):
         for col in range(len(app.palette[0])):
             if i < len(colors):
@@ -322,6 +355,10 @@ def createPaletteHelper(board):
 
 # Create Game Board function
 def createGameBoard(app):
+    """
+    Creates empty game board to be filled in.
+    True: this is a block space, False: this is not a block space.
+    """
     app.gameBoard = GameBoard()
     board = []
     for row in range(app.bRows):
