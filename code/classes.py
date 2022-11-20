@@ -5,8 +5,8 @@ class ColorBlock():
         self.hex = self.rgbToHex(self.rgb)
         self.size = size
 
-    # Source: https://stackoverflow.com/questions/51591456/can-i-use-rgb-in-tkinter
     @staticmethod
+    # Source: https://stackoverflow.com/questions/51591456/can-i-use-rgb-in-tkinter
     def rgbToHex(rgb):
         r, g, b = rgb
         return f'#{r:02x}{g:02x}{b:02x}'

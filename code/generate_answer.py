@@ -1,7 +1,7 @@
 from cmu_112_graphics import *
 import random
 from classes import *
-# Interpolation
+# RGB Interpolation
 # Takes start/end RGB and number of steps to interpolate
 def interpolateColors(startColor,endColor,totalBlocks):
     startR,startG,startB = startColor
@@ -76,7 +76,7 @@ def tBoard(level=2):
 
     # Create vertical branch from random horizontal position
     tCol = random.randint(0,cols-1)
-    rows = 12-cols-random.randint(0,8-cols)
+    rows = random.randint(4,6)
     startColor = colors[tCol]
     startColor,endColor = generateStartEndColors(rows-1,level,startColor)
     colors = interpolateColors(startColor,endColor,rows)

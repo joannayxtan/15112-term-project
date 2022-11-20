@@ -96,11 +96,11 @@ def gameMode_redrawAll(app,canvas):
 
 # Draw Buttons
 def drawButtons(app,canvas):
-    canvas.create_image(app.margin,app.height-app.margin,
-                        image=ImageTk.PhotoImage(app.backButton))
-    canvas.create_image(app.width/2,app.height-app.margin,
+    canvas.create_image(app.homeX,app.homeY,
+                        image=ImageTk.PhotoImage(app.home))
+    canvas.create_image(app.redoX,app.redoY,
                         image=ImageTk.PhotoImage(app.redo))
-    canvas.create_image(app.width-app.margin,app.height-app.margin,
+    canvas.create_image(app.helpX,app.helpY,
                         image=ImageTk.PhotoImage(app.help))
 
 # Draw Palette
@@ -170,7 +170,7 @@ def gameMode_mousePressed(app,event):
     for row in range(app.pRows):
         for col in range(app.pCols):
             x0,y0,x1,y1 = getBlockBounds(app,app.pStartX,app.pStartY,row,col)
-            if (x0 <= cx <= x1 and y0 <= cy <= y1 and app.palette[row][col] != False):
+            if (x0 <= cx <= x1 and y0 <= cy <= y1 and isinstance(app.palette[row][col],ColorBlock)):
                 app.selectedBlock = app.palette[row][col]
                 app.wasOnBoard = False
                 blockX,blockY = (x0+x1)/2,(y0+y1)/2
@@ -186,7 +186,7 @@ def gameMode_mousePressed(app,event):
     for row in range(app.bRows):
         for col in range(app.bCols):
             x0,y0,x1,y1 = getBlockBounds(app,app.bStartX,app.bStartY,row,col)
-            if (x0 <= cx <= x1 and y0 <= cy <= y1 and app.gameBoard.board[row][col] != False):
+            if (x0 <= cx <= x1 and y0 <= cy <= y1 and isinstance(app.gameBoard.board[row][col],ColorBlock)):
                 app.selectedBlock = app.gameBoard.board[row][col]
                 app.wasOnBoard = True
                 blockX,blockY = (x0+x1)/2,(y0+y1)/2
@@ -198,8 +198,23 @@ def gameMode_mousePressed(app,event):
                 app.gameBoard.board[row][col] = True
                 return
 
+    checkButtons(app,cx,cy)
     # print(f"currently selecting: {app.selectedBlock}")
     # print(f"mousePressed at {(event.x,event.y)}")
+
+def checkButtons(app,cx,cy):
+    # Check Home Button
+    w,h = app.home.size
+    if app.homeX-w/2 <= cx <= app.homeX+w/2 and app.homeY-h/2 <= cy <= app.homeY+h/2:
+        app.level = 0
+        app.mode = "homeMode"
+    w,h = app.redo.size
+    if app.redoX-w/2 <= cx <= app.redoX+w/2 and app.redoY-h/2 <= cy <= app.redoY+h/2:
+        initializeGame(app)
+    w,h = app.help.size
+    if app.redoX-w/2 <= cx <= app.redoX+w/2 and app.redoY-h/2 <= cy <= app.redoY+h/2:
+        pass
+
 
 def gameMode_mouseDragged(app,event):
     app.selectedX = event.x-app.cxCenterDiff
@@ -289,14 +304,17 @@ def appStarted(app):
 
     # Load Button Images
     # Source: https://www.flaticon.com/free-icons/back
-    app.backButton = app.loadImage('images/back.png')
-    app.backButton = app.scaleImage(app.backButton,0.05)
+    app.home = app.loadImage('images/back.png')
+    app.home = app.scaleImage(app.home,0.05)
     # Source: "https://www.flaticon.com/free-icons/redo"
     app.redo = app.loadImage('images/redo.png')
     app.redo = app.scaleImage(app.redo,0.05)
     # Source: https://www.flaticon.com/free-icons/question
     app.help = app.loadImage('images/help.png')
     app.help = app.scaleImage(app.help,0.05)
+    app.homeX,app.homeY = app.margin,app.height-app.margin
+    app.redoX,app.redoY = app.width/2,app.height-app.margin
+    app.helpX,app.helpY = app.width-app.margin,app.height-app.margin
 
 def initializeGame(app):
     generateAnswerBoard(app)
@@ -316,7 +334,8 @@ def initializeGame(app):
     app.pStartX = app.margin
     app.pStartY = app.height/2-app.margin*3
     app.bStartX = (app.width - app.bCols*app.blockSize)/2
-    app.bStartY = app.height/2-app.margin
+    app.bStartY = app.height*0.6-app.bRows*app.blockSize/2
+    # app.height/2-app.margin*1.3
 
     # Create Game Board to be drawn
     createGameBoard(app)
