@@ -19,6 +19,32 @@ class GameBoard():
         # hard coding the board
         self.board = []
 
-    # For testing purposes, allows passing in a set board
+    # Pass in a set board
     def setBoard(self,board):
         self.board = board
+
+# TODO: write Button class
+
+class Button():
+    def __init__(self,x,y,type,w=None,h=None,text=None,color=None,img=None):
+        self.x = x
+        self.y = y
+        self.type = type
+        if self.type in ["home","redo","help"]:
+            self.img = img
+            self.w,self.h = img.size
+        else:
+            self.w = w
+            self.h = h
+            self.color = color
+            self.text = text
+
+    def mousePressed(self,x,y):
+        if (self.x-self.w/2 <= x <= self.x+self.w/2 and
+            self.y-self.h/2 <= y <= self.y+self.h/2):
+            return True
+        return False
+
+    def getBounds(self):
+        return (self.x-self.w/2,self.y-self.h/2,
+                self.x+self.w/2,self.y+self.h/2)

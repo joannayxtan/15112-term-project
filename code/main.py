@@ -19,57 +19,35 @@ def homeMode_redrawAll(app,canvas):
                        font = titlefont, fill = pinkfill)
     canvas.create_text(app.width/2,app.height/3+app.margin,text="D I F F I C U L T Y",
                        font = subfont, fill = bluefill)
-    drawLevelChoices(app,canvas)
     canvas.create_text(app.width/2,app.height*0.57,text="CHOOSE DIFFICULTY",
                        font = smallfont, fill = 'grey')
-    drawPlayButton(app,canvas)
+    homeMode_drawButtons(app,canvas)
 
 # Draw Level Buttons
-def drawLevelChoices(app,canvas):
-    r = app.margin*0.4
-    startX = (app.width - 10*r)/2
-    for i in range(1,app.totalLevels+1):
-        cx = startX+(i-1)*2*r+r
-        cy = app.height/2
-        x0,y0,x1,y1 = getCircleBounds(app,i)
-        if i == app.level:
+def homeMode_drawButtons(app,canvas):
+    for button in app.buttons:
+        if button.type=="level":
+            x0,y0,x1,y1 = button.getBounds()
+            if int(button.text) == app.level:
+                button.color=pinkfill
+            else: button.color=bluefill
             canvas.create_oval(x0,y0,x1,y1,
-                               fill = pinkfill)
-        else:
-            canvas.create_oval(x0,y0,x1,y1,
-                               fill = bluefill)
-        canvas.create_text(cx,cy,text=f"{i}",font=subfont,fill='white')
-
-# Find position of Level Buttons
-def getCircleBounds(app,i):
-    r = app.margin*0.4
-    startX = (app.width - 10*r)/2
-    cx = startX+(i-1)*2*r+r
-    cy = app.height/2
-    x0,y0,x1,y1 = cx-r*0.8,cy-r*0.8,cx+r*0.8,cy+r*0.8
-    return x0,y0,x1,y1
-
-# Draw Play Button
-def drawPlayButton(app,canvas):
-    recW,recH = app.width/3,app.width/10
-    canvas.create_rectangle(app.width/2-recW/2,app.height*2/3-recH/2,
-                            app.width/2+recW/2,app.height*2/3+recH/2,
-                            fill=bluefill)
-    canvas.create_text(app.width/2,app.height*2/3,text="P L A Y",
-                       font=subfont,fill="white")
+                               fill = button.color)
+            canvas.create_text(button.x,button.y,text=button.text,font=subfont,fill='white')
+        elif button.type=="play":
+            x0,y0,x1,y1 = button.getBounds()
+            canvas.create_rectangle(x0,y0,x1,y1,fill=button.color)
+            canvas.create_text(button.x,button.y,text="P L A Y",
+                               font=subfont,fill="white")
 
 def homeMode_mousePressed(app,event):
-    for i in range(1,app.totalLevels+1):
-        x0,y0,x1,y1 = getCircleBounds(app,i)
-        if x0 <= event.x <= x1 and y0 <= event.y <= y1:
-            app.level = i
-    recW,recH = app.width/3,app.width/10
-    playX0,playY0 = app.width/2-recW/2,app.height*2/3-recH/2
-    playX1,playY1 = app.width/2+recW/2,app.height*2/3+recH/2
-    if (playX0 <= event.x <= playX1 and playY0 <= event.y <= playY1
-        and app.level != 0):
-        initializeGame(app)
-        app.mode = "gameMode"
+    for button in app.buttons:
+        if button.type=="level" and button.mousePressed(event.x,event.y):
+            app.level = int(button.text)
+        if (button.type=="play" and button.mousePressed(event.x,event.y)
+            and app.level != 0):
+            initializeGame(app)
+            app.mode = "gameMode"
 
 def homeMode_keyPressed(app,event):
     if event.key.isdigit() and 1 <= int(event.key) <= 5:
@@ -96,12 +74,10 @@ def gameMode_redrawAll(app,canvas):
 
 # Draw Buttons
 def drawButtons(app,canvas):
-    canvas.create_image(app.homeX,app.homeY,
-                        image=ImageTk.PhotoImage(app.home))
-    canvas.create_image(app.redoX,app.redoY,
-                        image=ImageTk.PhotoImage(app.redo))
-    canvas.create_image(app.helpX,app.helpY,
-                        image=ImageTk.PhotoImage(app.help))
+    for button in app.buttons:
+        if button.type in ["home","redo","help"]:
+            canvas.create_image(button.x,button.y,
+                                image=ImageTk.PhotoImage(button.img))
 
 # Draw Palette
 def drawPalette(app,canvas):
@@ -203,18 +179,14 @@ def gameMode_mousePressed(app,event):
     # print(f"mousePressed at {(event.x,event.y)}")
 
 def checkButtons(app,cx,cy):
-    # Check Home Button
-    w,h = app.home.size
-    if app.homeX-w/2 <= cx <= app.homeX+w/2 and app.homeY-h/2 <= cy <= app.homeY+h/2:
-        app.level = 0
-        app.mode = "homeMode"
-    w,h = app.redo.size
-    if app.redoX-w/2 <= cx <= app.redoX+w/2 and app.redoY-h/2 <= cy <= app.redoY+h/2:
-        initializeGame(app)
-    w,h = app.help.size
-    if app.redoX-w/2 <= cx <= app.redoX+w/2 and app.redoY-h/2 <= cy <= app.redoY+h/2:
-        pass
-
+    for button in app.buttons:
+        if button.type=="home" and button.mousePressed(cx,cy):
+            app.level = 0
+            app.mode = "homeMode"
+        if button.type=="redo" and button.mousePressed(cx,cy):
+            initializeGame(app)
+        if button.type=="help" and button.mousePressed(cx,cy):
+            pass
 
 def gameMode_mouseDragged(app,event):
     app.selectedX = event.x-app.cxCenterDiff
@@ -292,8 +264,41 @@ def appStarted(app):
     app.mode = "homeMode"
     app.totalLevels = 5
     app.level = 0
+    app.buttons = []
+
+    # Drawing Dimensions
     app.blockSize = app.width/9
     app.margin = (app.width - 6*app.blockSize)/2
+
+    # Level Buttons
+    w,h = app.margin*0.7,app.margin*0.7
+    startX = (app.width - 5*w)/2
+    for level in range(1,app.totalLevels+1):
+        cx = startX+(level-1)*(w+w/4)
+        cy = app.height/2
+        app.buttons.append(Button(cx,cy,"level",w,h,str(level),bluefill))
+
+    # Play Button
+    x,y = app.width/2,app.height*2/3
+    w,h = app.width/3,app.width/10
+    app.buttons.append(Button(x,y,"play",w,h,"play",bluefill))
+
+    # Game Buttons
+    # Source: https://www.flaticon.com/free-icons/back
+    x,y = app.margin,app.height-app.margin
+    img = app.loadImage('images/back.png')
+    img = app.scaleImage(img,0.05)
+    app.buttons.append(Button(x,y,"home",img=img))
+    # Source: "https://www.flaticon.com/free-icons/redo"
+    x,y = app.width/2,app.height-app.margin
+    img = app.loadImage('images/redo.png')
+    img = app.scaleImage(img,0.05)
+    app.buttons.append(Button(x,y,"redo",img=img))
+    # Source: https://www.flaticon.com/free-icons/question
+    x,y = app.width-app.margin,app.height-app.margin
+    img = app.loadImage('images/help.png')
+    img = app.scaleImage(img,0.05)
+    app.buttons.append(Button(x,y,"help",img=img))
 
     # Moving Block
     app.selectedBlock = None
@@ -301,20 +306,6 @@ def appStarted(app):
     app.cxCenterDiff,app.cyCenterDiff = (0,0)
     app.wasOnBoard = False
     app.originalRow,app.originalCol = (0,0)
-
-    # Load Button Images
-    # Source: https://www.flaticon.com/free-icons/back
-    app.home = app.loadImage('images/back.png')
-    app.home = app.scaleImage(app.home,0.05)
-    # Source: "https://www.flaticon.com/free-icons/redo"
-    app.redo = app.loadImage('images/redo.png')
-    app.redo = app.scaleImage(app.redo,0.05)
-    # Source: https://www.flaticon.com/free-icons/question
-    app.help = app.loadImage('images/help.png')
-    app.help = app.scaleImage(app.help,0.05)
-    app.homeX,app.homeY = app.margin,app.height-app.margin
-    app.redoX,app.redoY = app.width/2,app.height-app.margin
-    app.helpX,app.helpY = app.width-app.margin,app.height-app.margin
 
 def initializeGame(app):
     generateAnswerBoard(app)

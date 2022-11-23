@@ -29,12 +29,13 @@ def generateAnswerBoard(app):
     if app.level >= 5: pass
     app.ans.setBoard(random.choice(possibleBoards))
 
+    # For testing:
     # app.ans.setBoard([[ColorBlock((255,102,0),app.blockSize),
     #                       ColorBlock((255,153,0),app.blockSize),
     #                       ColorBlock((255,204,0),app.blockSize)]])
 
 def generateStartEndColors(minStep,level,startColor=None):
-    minStep*=30-level*5
+    minStep*=50-level*9
     if startColor == None:
         startColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
     endColor = [0,0,0]
