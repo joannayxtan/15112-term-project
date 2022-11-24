@@ -24,7 +24,8 @@ def generateAnswerBoard(app):
     if app.level >= 2:
         possibleBoards.append(linearBoard(2))
         possibleBoards.append(tBoard(2))
-    if app.level >= 3: pass
+    if app.level >= 3:
+        possibleBoards.append(randomBoard())
     if app.level >= 4: pass
     if app.level >= 5: pass
     app.ans.setBoard(random.choice(possibleBoards))
@@ -90,6 +91,35 @@ def tBoard(level=2):
         board[row][tCol] = ColorBlock(colors[row])
     return board
 
+
 # print(interpolateColors((255,102,0),(255,204,0),3))
 # print(generateStartEndColors(2))
 # print(linearBoard(3))
+
+#maxDim = 6x7
+def randomBoard():
+    rows = 7
+    cols = 6
+    board = [[False for i in range(cols)] for j in range(rows)]
+    row,col = random.randint(0,rows-1),random.randint(0,cols-1)
+    board = createBoolBoard(board,row,col,1)
+    colorBoard = []
+    for row in range(rows):
+        for col in range(cols):
+            if board[row][col] == True:
+                board[row][col] = ColorBlock((255,0,0))
+    return board
+
+def createBoolBoard(board,row,col,nBlocks):
+    print(f"row: {row},col: {col}")
+    rows,cols = len(board),len(board[0])
+    if nBlocks == 13:
+        return board
+    if board[row][col] == False:
+        nBlocks += 1
+        board[row][col] = True
+    nrow,ncol = random.choice([(row+1,col),(row-1,col),(row,col+1),(row,col-1)])
+    if (0 <= nrow < rows and 0 <= ncol < cols):
+        return createBoolBoard(board,nrow,ncol,nBlocks)
+    else:
+        return createBoolBoard(board,row,col,nBlocks)
