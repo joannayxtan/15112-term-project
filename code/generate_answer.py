@@ -36,6 +36,7 @@ def generateAnswerBoard(app):
     #                       ColorBlock((255,204,0),app.blockSize)]])
 
 def generateStartEndColors(minStep,level,startColor=None):
+    minStep-=1
     minStep*=50-level*9
     if startColor == None:
         startColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
@@ -62,7 +63,7 @@ True: blockspace, False: not block space
 
 def linearBoard(level=1):
     totalBlocks = random.randint(5,7)
-    startColor,endColor = generateStartEndColors(totalBlocks-1,level)
+    startColor,endColor = generateStartEndColors(totalBlocks,level)
     colors = interpolateColors(startColor,endColor,totalBlocks)
     board = []
     for i in range(totalBlocks):
@@ -72,7 +73,7 @@ def linearBoard(level=1):
 def tBoard(level=2):
     # Create horizontal branch
     cols = random.randint(4,6)
-    startColor,endColor = generateStartEndColors(cols-1,level)
+    startColor,endColor = generateStartEndColors(cols,level)
     colors = interpolateColors(startColor,endColor,cols)
     board = [[ColorBlock(color) for color in colors]]
 
@@ -80,14 +81,11 @@ def tBoard(level=2):
     tCol = random.randint(0,cols-1)
     rows = random.randint(4,6)
     startColor = colors[tCol]
-    startColor,endColor = generateStartEndColors(rows-1,level,startColor)
+    startColor,endColor = generateStartEndColors(rows,level,startColor)
     colors = interpolateColors(startColor,endColor,rows)
-    print(f"colors in tBoard: {colors}")
     for row in range(rows-1):
         board.append([False for i in range(cols)])
-    print(f"tBoard: {board}")
     for row in range(len(board)):
-        print(f"looping tBoard: {(row,tCol)}")
         board[row][tCol] = ColorBlock(colors[row])
     return board
 
@@ -97,21 +95,56 @@ def tBoard(level=2):
 # print(linearBoard(3))
 
 #maxDim = 6x7
-def randomBoard():
-    rows = 7
-    cols = 6
+def randomBoard(level=3):
+    rows,cols = 7,6
     board = [[False for i in range(cols)] for j in range(rows)]
+    colorBoard = copy.deepcopy(board)
     row,col = random.randint(0,rows-1),random.randint(0,cols-1)
     board = createBoolBoard(board,row,col,1)
-    colorBoard = []
-    for row in range(rows):
-        for col in range(cols):
-            if board[row][col] == True:
-                board[row][col] = ColorBlock((255,0,0))
-    return board
 
+    # Fill first and last rows with color
+    totalBlocks = 6
+    start,end = generateStartEndColors(totalBlocks,level)
+    colors = interpolateColors(start,end,totalBlocks)
+    colorBoard[0] = [ColorBlock(colors[i]) for i in range(len(colorBoard[0]))]
+    start,end = generateStartEndColors(totalBlocks,level)
+    colors = interpolateColors(start,end,totalBlocks)
+    colorBoard[-1] = [ColorBlock(colors[i]) for i in range(len(colorBoard[-1]))]
+
+    # Fill columns with color
+    colorBoard = [list(n) for n in zip(*colorBoard)]
+    for row in range(len(colorBoard)):
+        totalBlocks = len(colorBoard[row])
+        start,end = colorBoard[row][0].rgb,colorBoard[row][-1].rgb
+        colors = interpolateColors(start,end,totalBlocks)
+        colorBoard[row] = [ColorBlock(colors[i]) for i in range(len(colorBoard[row]))]
+    colorBoard = [list(n) for n in zip(*colorBoard)]
+    print(colorBoard)
+
+    for i in range(rows):
+        for j in range(cols):
+            if board[i][j] == False:
+                colorBoard[i][j] = False
+
+    # Remove empty rows and cols to center board
+    rows,cols = len(colorBoard),len(colorBoard[0])
+    temp = []
+    for row in colorBoard:
+        if any(row):
+            temp.append(row)
+    # Transpose temp to remove cols
+    temp = [list(n) for n in zip(*temp)]
+    finalBoard = []
+    for row in temp:
+        if any(row):
+            finalBoard.append(row)
+    # Transpose colorBoard back to original dim
+    finalBoard = [list(n) for n in zip(*finalBoard)]
+    return finalBoard
+
+# Create a board of booleans (True: block space, False = no block)
+# Randomized DFS, terminated at 12 blocks
 def createBoolBoard(board,row,col,nBlocks):
-    print(f"row: {row},col: {col}")
     rows,cols = len(board),len(board[0])
     if nBlocks == 13:
         return board

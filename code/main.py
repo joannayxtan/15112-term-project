@@ -186,7 +186,7 @@ def checkButtons(app,cx,cy):
         if button.type=="redo" and button.mousePressed(cx,cy):
             initializeGame(app)
         if button.type=="help" and button.mousePressed(cx,cy):
-            pass
+            app.gameBoard.board = app.ans.board
 
 def gameMode_mouseDragged(app,event):
     app.selectedX = event.x-app.cxCenterDiff
