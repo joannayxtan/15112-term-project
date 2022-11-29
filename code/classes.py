@@ -15,6 +15,9 @@ class ColorBlock:
     def __repr__(self):
         return f"Block with color: {self.hex}"
 
+    def __eq__(self,other):
+        return isinstance(other,ColorBlock) and self.rgb == other.rgb
+
 class GameBoard:
     def __init__(self):
         # hard coding the board
@@ -24,21 +27,25 @@ class GameBoard:
     def setBoard(self,board):
         self.board = board
 
+    def getBlockNum(self):
+        lengths = [len(row) for row in self.board]
+        return sum(lengths)
+
 # TODO: use **kwargs
 
 class Button:
-    def __init__(self,x,y,type,w=None,h=None,text=None,color=None,img=None):
+    def __init__(self,x,y,type,**kwargs):
         self.x = x
         self.y = y
         self.type = type
         if self.type in ["home","redo","help"]:
-            self.img = img
-            self.w,self.h = img.size
+            self.img = kwargs['img']
+            self.w,self.h = self.img.size
         else:
-            self.w = w
-            self.h = h
-            self.color = color
-            self.text = text
+            self.w = kwargs['w']
+            self.h = kwargs['h']
+            self.color = kwargs['color']
+            self.text = kwargs['text']
 
     def mousePressed(self,x,y):
         if (self.x-self.w/2 <= x <= self.x+self.w/2 and
