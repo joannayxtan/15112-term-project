@@ -77,6 +77,12 @@ def gameMode_redrawAll(app,canvas):
     if app.selectedBlock != None:
         drawSelectedBlock(app,canvas)
     drawButtons(app,canvas)
+    drawTimer(app,canvas)
+
+def drawTimer(app,canvas):
+    canvas.create_text(app.width/2,app.height-app.margin*1.5,
+                       text=f"{app.minutes:02d}:{app.seconds:02d}",
+                       font=smallfont,fill="white")
 
 # Draw Buttons
 def drawButtons(app,canvas):
@@ -103,7 +109,7 @@ def drawBlock(app,canvas,startX,startY,row,col,block,isBoard=False):
                                 fill = block.hex,
                                 width = 5)
         # if is hint block and in gameMode: draw check mark
-        if (row,col) in app.hintIndex and isBoard==True and app.mode == "gameMode":
+        if (row,col) in app.hintIndex and isBoard==True and app.mode in ["gameMode","helpMode"]:
             x,y = x1-app.blockSize*0.3,y1-app.blockSize*0.3
             canvas.create_image(x,y,
                                 image=ImageTk.PhotoImage(app.check))
@@ -208,7 +214,11 @@ def checkButtons(app,cx,cy):
             app.mode = "gameMode"
             initializeGame(app)
         if button.type=="help" and button.mousePressed(cx,cy): # Help Button
-            app.gameBoard.board = app.ans.board
+            if app.mode == "helpMode":
+                app.mode = "gameMode"
+            else:
+                app.mode = "helpMode"
+    print(app.mode)
 
 def gameMode_mouseDragged(app,event):
     app.selectedX = event.x-app.cxCenterDiff
@@ -290,6 +300,64 @@ def nextEmptySpacePalette(app):
     return None
 
 ##########################################
+# Help Mode
+##########################################
+def helpMode_redrawAll(app,canvas):
+    drawBackground(app,canvas)
+    canvas.create_text(app.width/2,app.margin,
+                       text=f"DIFFICULTY: {app.level}",
+                       font=subfont,fill=bluefill)
+    drawPalette(app,canvas)
+    drawBoard(app,canvas)
+    if app.selectedBlock != None:
+        drawSelectedBlock(app,canvas)
+    drawButtons(app,canvas)
+    drawTimer(app,canvas)
+
+def helpMode_mousePressed(app,event):
+    cx,cy = event.x,event.y
+
+    checkButtons(app,cx,cy)
+
+    # Check if block is in Board
+    for row in range(app.bRows):
+        for col in range(app.bCols):
+            x0,y0,x1,y1 = getBlockBounds(app,app.bStartX,app.bStartY,row,col)
+
+            # Selected block in board, has color, not hint block
+            if (x0 <= cx <= x1 and y0 <= cy <= y1 and
+                isinstance(app.ans.board[row][col],ColorBlock) and
+                (row,col) not in app.hintIndex):
+
+                # Empty the hint block space
+                result = nextEmptySpacePalette(app)
+                if result != None and isinstance(app.gameBoard.board[row][col],ColorBlock):
+                    i,j = result
+                    app.palette[i][j] = app.gameBoard.board[row][col]
+                    app.gameBoard.board[row][col] = True
+
+                # Find hint
+                app.hintIndex.add((row,col))
+                block = app.ans.board[row][col]
+
+                # If hint block in palette, remove from palette
+                for i in range(app.pRows):
+                    for j in range(app.pCols):
+                        if app.palette[i][j] == block:
+                            app.palette[i][j] = False
+
+                # If hint in wrong board space, remove from that space
+                for i in range(app.bRows):
+                    for j in range(app.bCols):
+                        if app.gameBoard.board[i][j] == block:
+                            app.gameBoard.board[i][j] = True
+
+                # Add hint
+                app.gameBoard.board[row][col] = block
+                app.mode = "gameMode"
+                return
+
+##########################################
 # Game End Mode
 ##########################################
 
@@ -301,6 +369,9 @@ def endMode_redrawAll(app,canvas):
                        font=subfont,fill=bluefill)
     canvas.create_text(app.width/2,app.height/3-app.margin,text="A W E S O M E !",
                        font = titlefont, fill = pinkfill)
+    canvas.create_text(app.width/2,app.height/3-app.margin*0.3,
+                       text=f"time: {app.minutes:02d}:{app.seconds:02d}",
+                       font = subfont,fill="white")
     drawButtons(app,canvas)
 
 def endMode_mousePressed(app,event):
@@ -315,6 +386,9 @@ def appStarted(app):
     app.mode = "homeMode"
     app.totalLevels = 5
     app.level = 0
+    app.time = 0
+    app.minutes = 0
+    app.seconds = 0
 
     # Drawing Dimensions
     app.blockSize = app.width/9
@@ -388,6 +462,8 @@ def initializeGame(app):
     app.pStartY = app.height/2-app.margin*3
     app.bStartX = (app.width - app.bCols*app.blockSize)/2
     app.bStartY = app.height*0.6-app.bRows*app.blockSize/2
+
+    app.time = 0
 
 # Create Palette function
 # Assumption: palette will not have more than 12 blocks
@@ -476,7 +552,15 @@ def getBlockBounds(app,startX,startY,row,col):
 
 def gameMode_timerFired(app):
     # check if reached solution
+    app.time += 1
+    app.minutes = int(app.time/10)//60
+    app.seconds = int(app.time/10)%60
     if app.gameBoard.board == app.ans.board:
         app.mode = "endMode"
+
+def helpMode_timerFired(app):
+    app.time += 1
+    app.minutes = int(app.time/10)//60
+    app.seconds = int(app.time/10)%60
 
 runApp(height=725,width=408)
