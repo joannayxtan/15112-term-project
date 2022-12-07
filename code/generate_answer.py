@@ -2,32 +2,6 @@ from cmu_112_graphics import *
 import random
 from classes import *
 
-def repr2dList(L):
-    if (L == []): return '[]'
-    output = [ ]
-    rows = len(L)
-    cols = max([len(L[row]) for row in range(rows)])
-    M = [['']*cols for row in range(rows)]
-    for row in range(rows):
-        for col in range(len(L[row])):
-            M[row][col] = repr(L[row][col])
-    colWidths = [0] * cols
-    for col in range(cols):
-        colWidths[col] = max([len(M[row][col]) for row in range(rows)])
-    output.append('[\n')
-    for row in range(rows):
-        output.append(' [ ')
-        for col in range(cols):
-            if (col > 0):
-                output.append(', ' if col < len(L[row]) else '  ')
-            output.append(M[row][col].rjust(colWidths[col]))
-        output.append((' ],' if row < rows-1 else ' ]') + '\n')
-    output.append(']')
-    return ''.join(output)
-
-def print2dList(L):
-    print(repr2dList(L))
-
 # RGB Interpolation
 # Takes start/end RGB and number of steps to interpolate
 def interpolateColors(startColor,endColor,totalBlocks):
@@ -51,15 +25,18 @@ def generateAnswerBoard(app):
     if app.level >= 2:
         possibleBoards.append(linearBoard(app))
         possibleBoards.append(tBoard(app))
-    if app.level == 3:
-        possibleBoards.append(randomBoard(app))
-    if app.level >= 4:
-        possibleBoards = [primsRandomBoard(app)]
+    if app.level >= 3:
+        possibleBoards = [randomBoard(app)]
+    if app.level == 4:
+        possibleBoards.append(primsRandomBoard(app))
+    if app.level == 5:
+        possibleBoards = [randomBoard(app),primsRandomBoard(app)]
     app.ans.setBoard(random.choice(possibleBoards))
 
 def generateStartEndColors(minStep,level,startColor=None):
     minStep-=1 # remove startColor
     minStep*=50-level*8 # increased closeness of color hues with increased level
+    originalStartColor = startColor
     if startColor == None:
         startColor = (random.randint(0,255),random.randint(0,255),random.randint(0,255))
     endColor = [0,0,0]
@@ -74,6 +51,8 @@ def generateStartEndColors(minStep,level,startColor=None):
             num1 = random.randint(0,startColor[i]-minStep)
             num2 = random.randint(startColor[i]+minStep,255)
             endColor[i] = random.choice((num1,num2))
+    if endColor == [255,255,255] or startColor == [255,255,255]:
+        return generateStartEndColors(minStep,level,originalStartColor)
     return startColor,tuple(endColor)
 
 ##########################################
@@ -122,16 +101,16 @@ def randomBoard(app):
     rows,cols = 5+(app.level-3),6 # Level 3: 5 rows, level 4: 6 rows, level 5: 7 rows
     board = [[False for i in range(cols)] for j in range(rows)]
     row,col = random.randint(0,rows-1),random.randint(0,cols-1)
-    board = createBoolBoard(board,row,col,[],0)
+    board = createBoolBoard(app,board,row,col,[],0)
     return fillBoard(app,board)
 
 # Create a board of booleans (True: block space, False = no block)
-# Randomized DFS, terminate at 12 blocks
+# Randomized DFS
 # Source: https://www.algosome.com/articles/maze-generation-depth-first.html
-def createBoolBoard(board,row,col,visited,nBlocks):
+def createBoolBoard(app,board,row,col,visited,nBlocks):
 
-    # Base Case: board already has 14 block spaces
-    if nBlocks == 14:
+    # Base Case: board already has enough block spaces
+    if nBlocks == app.numBlocks:
         return board
 
     # Add a block space
@@ -146,12 +125,12 @@ def createBoolBoard(board,row,col,visited,nBlocks):
     if neighbor == None:
         visited.pop()
         row,col = visited[-1]
-        return createBoolBoard(board,row,col,visited,nBlocks)
+        return createBoolBoard(app,board,row,col,visited,nBlocks)
 
     # If current node has unvisited neighbor, move to neighbor
     else:
         row,col = neighbor
-        return createBoolBoard(board,row,col,visited,nBlocks+1)
+        return createBoolBoard(app,board,row,col,visited,nBlocks+1)
 
 def getNeighbors(board,row,col):
     rows,cols = rows,cols = len(board),len(board[0])
@@ -171,142 +150,125 @@ def getNeighbors(board,row,col):
     # Randomly select neighbor
     return random.choice(neighbors)
 
+# Create a board of booleans (True: block space, False = no block)
+# Randomized Prim's Algorithm
 # Source: https://medium.com/swlh/fun-with-python-1-maze-generator-931639b4fb7e
 def primsRandomBoard(app):
-    rows,cols = 7,6
-    board = [[None for i in range(cols)] for j in range(rows)]
+    if app.numBlocks <= 14:
+        rows,cols = 7,6
+    else:
+        rows,cols = 9,9
+    board = [[False for i in range(cols)] for j in range(rows)]
     row,col = random.randint(1,rows-2),random.randint(1,cols-2)
     board[row][col] = True
 
     neighbors = set([(row-1,col),(row,col-1),(row+1,col),(row,col+1)])
+    '''
     for neighbor in neighbors:
         i,j = neighbor
         board[i][j] = False
+    '''
 
-    nBlocks = 14
+    nBlocks = app.numBlocks
     while(len(neighbors) != 0 and nBlocks != 0):
+
+        # Pick a random block
         # Source: https://www.geeksforgeeks.org/retrieve-elements-from-python-set/
-        print(neighbors)
         nextBlock = next(iter(neighbors))
         row,col = nextBlock
+
+        # Check if block is on left edge
         if col != 0:
-            if board[row][col-1] == None and board[row][col+1] == True:
+            if board[row][col-1] == False and board[row][col+1] == True:
                 numNeighbors = countNeighbors(board,nextBlock)
                 if numNeighbors < 2:
                     board[row][col] = True
                     nBlocks -=1
 
                     if row != 0 and board[row-1][col] != True:
-                        board[row-1][col] = False
                         neighbors.add((row-1,col))
 
                     if row != rows-1 and board[row+1][col] != True:
-                        board[row+1][col] = False
                         neighbors.add((row+1,col))
 
                     if board[row][col-1] != True:
-                        board[row][col-1] = False
                         neighbors.add((row,col-1))
-                temp = []
-                for n in list(neighbors):
-                    if n != (row,col):
-                        temp.append(n)
+                temp = list(neighbors)
+                temp.remove((row,col))
                 neighbors = set(temp)
-
-                print2dList(board)
                 continue
 
         if row != 0:
-            if board[row-1][col] == None and board[row+1][col] == True:
+            if board[row-1][col] == False and board[row+1][col] == True:
                 numNeighbors = countNeighbors(board,nextBlock)
                 if numNeighbors < 2:
                     board[row][col] = True
                     nBlocks -=1
 
                     if board[row-1][col] != True:
-                        board[row-1][col] = False
                         neighbors.add((row-1,col))
 
                     if col != 0 and board[row][col-1] != True:
-                        board[row][col-1] = False
                         neighbors.add((row,col-1))
 
                     if col != rows-1 and board[row][col+1] != True:
-                        board[row][col+1] = False
                         neighbors.add((row,col+1))
 
-                print2dList(board)
-                temp = []
-                for n in list(neighbors):
-                    if n != (row,col):
-                        temp.append(n)
+                temp = list(neighbors)
+                temp.remove((row,col))
                 neighbors = set(temp)
                 continue
+
         if row != rows-1:
-            if board[row+1][col] == None and board[row-1][col] == True:
+            if board[row+1][col] == False and board[row-1][col] == True:
                 numNeighbors = countNeighbors(board,nextBlock)
                 if numNeighbors < 2:
                     board[row][col] = True
                     nBlocks -=1
 
                     if board[row+1][col] != True:
-                        board[row+1][col] = False
                         neighbors.add((row+1,col))
 
                     if col != 0 and board[row][col-1] != True:
-                        board[row][col-1] = False
                         neighbors.add((row,col-1))
 
                     if col != rows-1 and board[row][col+1] != True:
-                        board[row][col+1] = False
                         neighbors.add((row,col+1))
 
-                print2dList(board)
-                temp = []
-                for n in list(neighbors):
-                    if n != (row,col):
-                        temp.append(n)
+                temp = list(neighbors)
+                temp.remove((row,col))
                 neighbors = set(temp)
                 continue
 
         if col != cols-1:
-            if board[row][col+1] == None and board[row][col-1] == True:
+            if board[row][col+1] == False and board[row][col-1] == True:
                 numNeighbors = countNeighbors(board,nextBlock)
                 if numNeighbors < 2:
                     board[row][col] = True
                     nBlocks -=1
 
                     if board[row][col+1] != True:
-                        board[row][col+1] = False
                         neighbors.add((row,col+1))
 
                     if row != rows-1 and board[row+1][col] != True:
-                        board[row+1][col] = False
                         neighbors.add((row+1,col))
 
                     if row != 0 and board[row-1][col] != True:
-                        board[row-1][col] = False
                         neighbors.add((row-1,col))
 
-                print2dList(board)
-                temp = []
-                for n in list(neighbors):
-                    if n != (row,col):
-                        temp.append(n)
+                temp = list(neighbors)
+                temp.remove((row,col))
                 neighbors = set(temp)
                 continue
 
-        temp = []
-        for n in list(neighbors):
-            if n != (row,col):
-                temp.append(n)
+        temp = list(neighbors)
+        temp.remove((row,col))
         neighbors = set(temp)
 
-    for i in range(0,rows):
-        for j in range(0,cols):
-            if board[i][j] == None:
-                board[i][j] = False
-    print2dList(board)
+    # for i in range(0,rows):
+    #     for j in range(0,cols):
+    #         if board[i][j] == None:
+    #             board[i][j] = False
     return fillBoard(app,board)
 
 def countNeighbors(board,block):

@@ -72,17 +72,28 @@ def gameMode_redrawAll(app,canvas):
     canvas.create_text(app.width/2,app.margin,
                        text=f"DIFFICULTY: {app.level}",
                        font=subfont,fill=bluefill)
+    if app.level == 5:
+        canvas.create_text(app.width/2,app.margin*1.6,
+                        text=f"COUNTING DOWN!",
+                        font = subfont,fill="white")
     drawPalette(app,canvas)
     drawBoard(app,canvas)
     if app.selectedBlock != None:
         drawSelectedBlock(app,canvas)
     drawButtons(app,canvas)
     drawTimer(app,canvas)
+    drawHintNum(app,canvas)
 
 def drawTimer(app,canvas):
     canvas.create_text(app.width/2,app.height-app.margin*1.5,
                        text=f"{app.minutes:02d}:{app.seconds:02d}",
                        font=smallfont,fill="white")
+
+def drawHintNum(app,canvas):
+    canvas.create_text(app.width-app.margin,app.height-app.margin*1.5,
+                       text=f"hints: {app.numHints}",
+                       font=smallfont,fill="white")
+
 
 # Draw Buttons
 def drawButtons(app,canvas):
@@ -205,6 +216,13 @@ def gameMode_mousePressed(app,event):
 
     checkButtons(app,cx,cy)
 
+# For testing purposes: directly show answer
+def gameMode_keyPressed(app,event):
+    if event.key == 'a':
+        app.gameBoard.board = app.ans.board
+    if event.key == 'e':
+        app.mode = "endMode"
+
 def checkButtons(app,cx,cy):
     for button in app.buttons:
         if button.type=="home" and button.mousePressed(cx,cy): # Home Button
@@ -213,12 +231,11 @@ def checkButtons(app,cx,cy):
         if button.type=="redo" and button.mousePressed(cx,cy): # Redo Button
             app.mode = "gameMode"
             initializeGame(app)
-        if button.type=="help" and button.mousePressed(cx,cy): # Help Button
+        if button.type=="help" and button.mousePressed(cx,cy) and app.numHints != 0: # Help Button
             if app.mode == "helpMode":
                 app.mode = "gameMode"
             else:
                 app.mode = "helpMode"
-    print(app.mode)
 
 def gameMode_mouseDragged(app,event):
     app.selectedX = event.x-app.cxCenterDiff
@@ -313,6 +330,7 @@ def helpMode_redrawAll(app,canvas):
         drawSelectedBlock(app,canvas)
     drawButtons(app,canvas)
     drawTimer(app,canvas)
+    drawHintNum(app,canvas)
 
 def helpMode_mousePressed(app,event):
     cx,cy = event.x,event.y
@@ -355,6 +373,7 @@ def helpMode_mousePressed(app,event):
                 # Add hint
                 app.gameBoard.board[row][col] = block
                 app.mode = "gameMode"
+                app.numHints -= 1
                 return
 
 ##########################################
@@ -367,11 +386,16 @@ def endMode_redrawAll(app,canvas):
     canvas.create_text(app.width/2,app.margin,
                        text=f"DIFFICULTY: {app.level}",
                        font=subfont,fill=bluefill)
-    canvas.create_text(app.width/2,app.height/3-app.margin,text="A W E S O M E !",
-                       font = titlefont, fill = pinkfill)
-    canvas.create_text(app.width/2,app.height/3-app.margin*0.3,
-                       text=f"time: {app.minutes:02d}:{app.seconds:02d}",
-                       font = subfont,fill="white")
+    if app.ans.board == app.gameBoard.board:
+        canvas.create_text(app.width/2,app.height/3-app.margin,text="A W E S O M E !",
+                        font = titlefont, fill = pinkfill)
+    else:
+        canvas.create_text(app.width/2,app.height/3-app.margin,text="T I M E   O U T",
+                        font = titlefont, fill = pinkfill)
+    if app.level < 5:
+        canvas.create_text(app.width/2,app.height/3-app.margin*0.3,
+                        text=f"time: {app.minutes:02d}:{app.seconds:02d}",
+                        font = subfont,fill="white")
     drawButtons(app,canvas)
 
 def endMode_mousePressed(app,event):
@@ -389,8 +413,10 @@ def appStarted(app):
     app.time = 0
     app.minutes = 0
     app.seconds = 0
+    app.numHints = 0
 
     # Drawing Dimensions
+    app.numBlocks = 14
     app.blockSize = app.width/9
     app.margin = (app.width - 6*app.blockSize)/2
 
@@ -438,7 +464,23 @@ def appStarted(app):
     app.originalRow,app.originalCol = (0,0)
 
 def initializeGame(app):
+    print(f"level: {app.level}")
+    app.numBlocks = 14
+    app.blockSize = app.width/9
+    if app.level == 3:
+        app.numHints = 3
 
+    if app.level >= 4:
+        app.numBlocks = 26
+        app.numHints = 5
+        app.blockSize = (app.width-app.margin*2)/8
+
+    if app.level == 5:
+        app.numHints = 3
+        app.time = 5*60*10 # 5 minutes
+        print(app.time)
+    else:
+        app.time = 0
     # Create Answer Board
     generateAnswerBoard(app)
 
@@ -462,8 +504,8 @@ def initializeGame(app):
     app.pStartY = app.height/2-app.margin*3
     app.bStartX = (app.width - app.bCols*app.blockSize)/2
     app.bStartY = app.height*0.6-app.bRows*app.blockSize/2
-
-    app.time = 0
+    print(f"level: {app.level}")
+    print(f"level: {app.numBlocks}")
 
 # Create Palette function
 # Assumption: palette will not have more than 12 blocks
@@ -481,7 +523,10 @@ def createPalette(app):
             onlyColors.append(color)
     colors = onlyColors
     random.shuffle(colors)
-    app.palette = [[False for i in range(6)] for j in range(2)]
+    if app.numBlocks == 14:
+        app.palette = [[False for i in range(6)] for j in range(2)]
+    else:
+        app.palette = [[False for i in range(8)] for j in range(3)]
     i = 0
     for row in range(len(app.palette)):
         for col in range(len(app.palette[0])):
@@ -552,15 +597,34 @@ def getBlockBounds(app,startX,startY,row,col):
 
 def gameMode_timerFired(app):
     # check if reached solution
-    app.time += 1
-    app.minutes = int(app.time/10)//60
-    app.seconds = int(app.time/10)%60
+    if app.level == 5:
+        app.time -= 1
+        app.minutes = int(app.time/10)//60
+        app.seconds = int(app.time/10)%60
+        if app.time == 0:
+            app.mode = "endMode"
+    else:
+        app.time += 1
+        app.minutes = int(app.time/10)//60
+        app.seconds = int(app.time/10)%60
+        if app.minutes == 100:
+            app.mode = "endMode"
+
     if app.gameBoard.board == app.ans.board:
         app.mode = "endMode"
 
 def helpMode_timerFired(app):
-    app.time += 1
-    app.minutes = int(app.time/10)//60
-    app.seconds = int(app.time/10)%60
+    if app.level == 5:
+        app.time -= 1
+        app.minutes = int(app.time/10)//60
+        app.seconds = int(app.time/10)%60
+        if app.time == 0:
+            app.mode = "endMode"
+    else:
+        app.time += 1
+        app.minutes = int(app.time/10)//60
+        app.seconds = int(app.time/10)%60
+        if app.minutes == 100:
+            app.mode = "endMode"
 
 runApp(height=725,width=408)
